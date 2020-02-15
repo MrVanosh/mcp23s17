@@ -35,11 +35,11 @@ Write to first 4 pins on an MCP23S17 extender.
 ```js
 const MCP23S17 = require('@mrvanosh/mcp23s17')
 
-const mcp = new MCP23S17
-
 // MCP23S17 is on BUS 0 and it's device 0
 // this stands for /dev/spidev0.0
-mcp.begin(0,0)
+const mcp = new MCP23S17(0, 0)
+
+mcp.begin()
 
 mcp.mode(0, 'out')
 mcp.mode(1, 'out')
@@ -56,13 +56,26 @@ mcp.write(3, true)
 All methods are asynchronous.
 
 ### Class MCP23S17
-- [device.begin(busNumber, deviceNumber)](#beginbusnumber-devicenumber)
-- [device.mode(pin, mode)](#modepin-mode)
-
-### begin(busNumber, deviceNumber)
+- [MCP23S17](#mcp23s17)
+  - [Contents](#contents)
+  - [Installation](#installation)
+  - [What's working?](#whats-working)
+  - [Coming soon](#coming-soon)
+  - [Usage](#usage)
+  - [API Documentation](#api-documentation)
+    - [Class MCP23S17](#class-mcp23s17)
+    - [MCP23S17(busNumber, deviceNumber)](#mcp23s17busnumber-devicenumber)
+    - [begin()](#begin)
+    - [mode(pin, mode)](#modepin-mode)
+  
+### MCP23S17(busNumber, deviceNumber)
 - busNumber - the number of the SPI bus to open, 0 for `/dev/spidev0.n`, 1 for `/dev/spidev1.n`, ...
 - deviceNumber - the number of the SPI device to open, 0 for `/dev/spidevn.0`, 1 for `/dev/spidevn.1`, ...
 
+### begin()
+  Initializes MCP23S17
+
 ### mode(pin, mode)
+Setup pin mode
 - pin - pin on MCP23S17 numerated from 0 to 15
 - mode - `'in'` for set pin to input, `'out'` for set pin to output
