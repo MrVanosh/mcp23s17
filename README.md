@@ -1,3 +1,5 @@
+![npm Version](https://img.shields.io/npm/v/@mrvanosh/mcp23s17?style=flat-square)
+
 # MCP23S17
 This is library to control the MCP23S17 IO-Expander.
 
