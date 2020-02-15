@@ -1,0 +1,30 @@
+{
+  "name": "@mrvanosh/mcp23s17",
+  "version": "1.0.0",
+  "description": "MCP23S17 library that works in newest Node.js versions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrVanosh/mcp23s17.git"
+  },
+  "keywords": [
+    "mcp23s17",
+    "raspberry",
+    "spi",
+    "gpio",
+    "expander",
+    "io"
+  ],
+  "author": "Mateusz Iwaniszczuk",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MrVanosh/mcp23s17/issues"
+  },
+  "homepage": "https://github.com/MrVanosh/mcp23s17#readme",
+  "dependencies": {
+    "spi-device": "^3.0.0"
+  }
+}
