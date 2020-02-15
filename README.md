@@ -56,17 +56,9 @@ mcp.write(3, true)
 All methods are asynchronous.
 
 ### Class MCP23S17
-- [MCP23S17](#mcp23s17)
-  - [Contents](#contents)
-  - [Installation](#installation)
-  - [What's working?](#whats-working)
-  - [Coming soon](#coming-soon)
-  - [Usage](#usage)
-  - [API Documentation](#api-documentation)
-    - [Class MCP23S17](#class-mcp23s17)
-    - [MCP23S17(busNumber, deviceNumber)](#mcp23s17busnumber-devicenumber)
-    - [begin()](#begin)
-    - [mode(pin, mode)](#modepin-mode)
+- [MCP23S17 Constructor](#mcp23s17busnumber-devicenumber)
+- [device.begin(busNumber, deviceNumber)](#begin)
+- [device.mode(pin, mode)](#modepin-mode)
   
 ### MCP23S17(busNumber, deviceNumber)
 - busNumber - the number of the SPI bus to open, 0 for `/dev/spidev0.n`, 1 for `/dev/spidev1.n`, ...
