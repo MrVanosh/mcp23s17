@@ -13,7 +13,6 @@ I will really appreciate making issues and pull requests on GitHub.
 ## Contents
   * [Installation](#installation)
   * [What's working](#whats-working)
-  * [Coming soon](#coming-soon)
   * [Usage](#usage)
   * [API Documentation](#api-documentation)
 
@@ -25,33 +24,45 @@ npm i @mrvanosh/mcp23s17
 ## What's working?
 - Setting pin mode
 - Writing pin state to HIGH or LOW
-
-## Coming soon
-- Reading state from pin
-- Setting mode & writing state for many pins by array
+- Reading pin state
+- Pull-up input pins
+- Software onChange callbacks
 
 ## Usage
-Write to first 4 pins on an MCP23S17 extender.
+Turn on LED on input change on an MCP23S17 extender.
 
 ```js
-const MCP23S17 = require('@mrvanosh/mcp23s17')
+const MCP23S17 = require('@mrvanosh/mcp23s17');
 
-// MCP23S17 is on BUS 0 and it's device 0
-// this stands for /dev/spidev0.0
-const mcp = new MCP23S17(0, 0)
+(async () => {
+  // MCP23S17 is on BUS 0 and it's device 0
+  // this stands for /dev/spidev0.0
+  const mcp = new MCP23S17.MCP23S17(0, 0);
 
-mcp.begin()
+  // Button is connected to pin #7 and ground
+  // LED anode connected to pin #13 (B5), LED cathode is connected to ground through resistor 300 ohm
 
-mcp.mode(0, 'out')
-mcp.mode(1, 'out')
-mcp.mode(2, 'out')
-mcp.mode(3, 'out')
+  await mcp.begin()
 
-mcp.write(0, true)
-mcp.write(1, true)
-mcp.write(2, true)
-mcp.write(3, true)
+  // Set pin #7 (A7) as input with pull-up resistor
+  const input = await mcp.mode(7, MCP23S17.MODE_INPUT, true)
+  // Set pin #13 (B5) as output with initial state LOW
+  const output = await mcp.mode(13, MCP23S17.MODE_OUTPUT, false)
+
+  input.onChange((value) => {
+    // Revert value because input is pull-up
+    output.write(!value);
+  })
+
+  while(1) {
+    // continuously reading input to detect changes
+    await mcp.read();
+    // If you don't need track a immediate change, use small pause
+    // await (new Promise((resolve) => setTimeout(resolve, 50)));
+  }
+})();
 ```
+See more examples in `examples` directory
 
 ## API Documentation
 All methods are asynchronous.
@@ -59,7 +70,12 @@ All methods are asynchronous.
 ### Class MCP23S17
 - [MCP23S17 Constructor](#mcp23s17busnumber-devicenumber)
 - [device.begin(busNumber, deviceNumber)](#begin)
-- [device.mode(pin, mode)](#modepin-mode)
+- [device.mode(pin, mode[, stateOrPullUp])](#modepin-mode)
+- [device.read([pin])](#readpin)
+- [device.write(pin, state)](#writepin-state)
+- [device.directions(arrayOfPins)](#directionsarrayofpins)
+- [device.toggle(pin)](#togglepin)
+- [device.onChange(pin, callback)](#onchangepin-callback)
   
 ### MCP23S17(busNumber, deviceNumber)
 - busNumber - the number of the SPI bus to open, 0 for `/dev/spidev0.n`, 1 for `/dev/spidev1.n`, ...
@@ -71,4 +87,27 @@ All methods are asynchronous.
 ### mode(pin, mode)
 Setup pin mode
 - pin - pin on MCP23S17 numerated from 0 to 15
-- mode - `'in'` for set pin to input, `'out'` for set pin to output
+- mode - `MCP23S17.MODE_INPUT` or `MCP23S17.MODE_OUTPUT`
+- stateOrPullUp - pull-up for inputs and LOW/HIGH state for outputs
+
+### read([pin])
+Read certain pin or read all pins to cache. Return true/false for pin reading or 16bit number with pins state
+- pin - pin number for reading (0-15)
+
+### write(pin, state)
+Write LOW or HIGH value to output pin
+- pin - pin number
+- state - true/false
+
+### directions(arrayOfPins)
+Setting pins directions through 16 length array (see examples), Must be executed before `begin` function
+- arrayOfPins - array of pin directions 
+
+### toggle(pin)
+Revert state of output pin
+- pin - pin number
+
+### onChange(pin, callback)
+Track changes value at input pin and execute callback with new value
+- pin - input pin number
+- callback - function to be executed on pin state change
