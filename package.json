@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/MrVanosh/mcp23s17#readme",
   "dependencies": {
+    "debug": "^4.1.1",
     "spi-device": "^3.0.0"
   }
 }
