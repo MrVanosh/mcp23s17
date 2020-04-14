@@ -47,14 +47,15 @@ class MCP23S17 {
   _GPIO = 0x0000
   _GPPU = 0x0000
   _IODIR = 0xFFFF
-  mcp23s17 = null
+  _mcp23s17 = null
   _isInitilized = false
   _deviceOpcode = 0x40
+  _changeCallBacks = []
 
   constructor(busNumber, deviceNumber, slaveAddress = 0x00) {
     this._deviceOpcode |= (slaveAddress << 1)
     debug('Device opcode byte', this._deviceOpcode.toString(2))
-    this.mcp23s17 = new Promise((resolve, reject) => {
+    this._mcp23s17 = new Promise((resolve, reject) => {
       const mcp23s17 = spi.open(busNumber, deviceNumber, { maxSpeedHz: 10000000 }, err => {
         if (err) reject(err)
         resolve(mcp23s17)
@@ -66,7 +67,7 @@ class MCP23S17 {
     if (!this._isInitilized) {
       throw new Error('Please call `begin` before')
     }
-    return this.mcp23s17
+    return this._mcp23s17
   }
 
   _isInputMode(value) {
@@ -108,7 +109,7 @@ class MCP23S17 {
   }
 
   async _write(register, value) {
-    debug(`Write register 0x${register.toString(16).toUpperCase()} with value ${value.toString(2)}`)
+    debug(`Write register 0x${register.toString(16).toUpperCase()} = 0b${value.toString(2)}`)
     return this._transfer(WRITE, register, value)
   }
 
@@ -119,6 +120,23 @@ class MCP23S17 {
 
   _getRegisterValue(pin, value16Bit) {
     return pin < 8 ? value16Bit & 0xFF : value16Bit >> 8
+  }
+
+  _checkInputChanged(oldValue) {
+    if (!this._changeCallBacks.length) {
+      return;
+    }
+    debug("Check input pins changed")
+    for (const i in this._changeCallBacks) {
+      const checkBit = 1 << i;
+      // If pin is in output mode now skipped it
+      if (!(this._IODIR & checkBit)) {
+        continue;
+      }
+      if ((oldValue & checkBit) !== (this._GPIO & checkBit)) {
+        this._changeCallBacks[i](!!(this._GPIO & checkBit));
+      }
+    }
   }
 
   async begin() {
@@ -149,9 +167,9 @@ class MCP23S17 {
 
     const setMode = (pin, mode) => {
       if (this._isInputMode(mode)) {
-        this._IODIR |= 1 << pin
+        this._IODIR |= (1 << pin);
       } else {
-        this._IODIR &= ~(1 << pin)
+        this._IODIR &= (~(1 << pin));
       }
     }
 
@@ -165,8 +183,8 @@ class MCP23S17 {
           } else {
             this._GPPU &= ~(1 << n)
           }
-        } else if (!this._isInputMode(value.mode) && typeof (value.level) !== 'undefined') {
-          if (value.level) {
+        } else if (!this._isInputMode(value.mode) && typeof (value.state) !== 'undefined') {
+          if (value.state) {
             this._GPIO |= 1 << n
           } else {
             this._GPIO &= ~(1 << n)
@@ -179,7 +197,7 @@ class MCP23S17 {
 
   }
 
-  async mode(pin, mode, levelOrPullUp) {
+  async mode(pin, mode, stateOrPullUp) {
     this._validatePin(pin)
     debug(`Set mode '${mode}' for pin #${pin}`)
 
@@ -191,16 +209,16 @@ class MCP23S17 {
 
     await this._write(pin < 8 ? IODIRA : IODIRB, this._getRegisterValue(pin, this._IODIR))
 
-    if (typeof (levelOrPullUp) !== 'undefined') {
+    if (typeof (stateOrPullUp) !== 'undefined') {
       if (this._isInputMode(mode)) {
-        if (levelOrPullUp) {
+        if (stateOrPullUp) {
           this._GPPU |= (1 << pin)
         } else {
           this._GPPU &= (~(1 << pin))
         }
         await this._write(pin < 8 ? GPPUA : GPPUB, this._getRegisterValue(pin, this._GPPU))
       } else {
-        await this.write(pin, !!levelOrPullUp)
+        await this.write(pin, !!stateOrPullUp)
       }
     }
 
@@ -221,16 +239,20 @@ class MCP23S17 {
   }
 
   async read(pin) {
-    this._validatePin(pin, MODE_INPUT)
+    typeof(pin) !== 'undefined' && this._validatePin(pin, MODE_INPUT);
     debug(`Read ${typeof (pin) === 'undefined' ? 'pins' : `pin #${pin}`}`)
 
-    const value = await this._read(pin < 8 ? GPIOA : GPIOB)
+    const oldGPIO = this._GPIO;
+    const register = (pin < 8 || typeof(pin) === 'undefined') ? GPIOA : GPIOB
+    const value = await this._read(register);
     if (typeof (pin) !== 'undefined') {
       this._GPIO = (this._GPIO & (pin < 8 ? 0xFF00 : 0xFF)) | (value << (pin < 8 ? 0 : 8))
+      this._checkInputChanged(oldGPIO);
       return this.get(pin)
     }
     const valueB = await this._read(GPIOB)
     this._GPIO = value | (valueB << 8)
+    this._checkInputChanged(oldGPIO);
 
     return this._GPIO
   }
@@ -240,53 +262,44 @@ class MCP23S17 {
     return !!(this._GPIO & (1 << pin))
   }
 
+  getPin(pin) {
+    return (this._IODIR & (1 << pin)) ? new InputPin(pin, this) : new OutputPin(pin, this);
+  }
+
   async toggle(pin) {
     this._validatePin(pin, MODE_OUTPUT)
 
     return this.write(pin, !(this._GPIO & (1 << pin)))
   }
+
+  onChange(pin, callback) {
+    this._validatePin(pin, MODE_INPUT);
+    this._changeCallBacks[pin] = callback.bind(this);
+  }
 }
 
-class OutputPin {
+class Pin {
   mcp;
   pin;
+
   constructor(pin, mcp) {
     this.pin = pin;
     this.mcp = mcp;
   }
-
-  async write(level) {
-    return this.mcp.write(this.pin, level);
-  }
-
-  async low() {
-    return this.write(false);
-  }
-
-  async high() {
-    return this.write(true);
-  }
 }
 
-class InputPin {
-  mcp;
-  pin;
-  constructor(pin, mcp) {
-    this.pin = pin;
-    this.mcp = mcp;
-  }
+class OutputPin extends Pin {
+  write = async (level) => this.mcp.write(this.pin, level);
+  low = async () => this.write(false);
+  high = async () => this.write(true);
+  toggle = async () => this.mcp.toggle(this.pin);
+}
 
-  async read() {
-    return this.mcp.read(this.pin);
-  }
-
-  async pullUp() {
-    return this.mcp.mode(this.pin, MODE_INPUT, true);
-  }
-
-  async pullOff() {
-    return this.mcp.mode(this.pin, MODE_INPUT, false);
-  }
+class InputPin extends Pin {
+  read = async () => this.mcp.read(this.pin);
+  pullUp = async () => this.mcp.mode(this.pin, MODE_INPUT, true);
+  pullOff = async () => this.mcp.mode(this.pin, MODE_INPUT, false);
+  onChange = (callback) => this.mcp.onChange(this.pin, callback);
 }
 
 module.exports = {
