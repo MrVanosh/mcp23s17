@@ -1,6 +1,6 @@
 {
   "name": "@mrvanosh/mcp23s17",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "MCP23S17 library that works in newest Node.js versions",
   "main": "index.js",
   "scripts": {
