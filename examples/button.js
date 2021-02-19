@@ -7,7 +7,9 @@ const {
   MODE_OUTPUT,
   MODE_INPUT,
   PULL_UP,
-  OUTPUT_HIGH
+  OUTPUT_HIGH,
+  OUTPUT_LOW,
+  Button,
 } = require('../');
 
 (async () => {
@@ -23,13 +25,33 @@ const {
   await mcp.begin()
 
   // Set pin #7 (A7) as input with pull-up resistor
-  const input = await mcp.mode(A7, MODE_INPUT, PULL_UP)
+  const input = await mcp.mode(A7, MODE_INPUT, PULL_UP);
   // Set pin #13 (B5) as output with initial state LOW
-  const output = await mcp.mode(B5, MODE_OUTPUT, OUTPUT_HIGH)
+  const output = await mcp.mode(B5, MODE_OUTPUT, OUTPUT_LOW);
+  let interval;
+  let timer;
 
-  input.onChange((value) => {
-    // Revert value because input is pull-up
-    output.write(!value);
+  // Second argument is optional
+  const pushButton = new Button(input, {
+    doubleClickThreshold: 300,
+    longClickThreshold: 1000,
+  });
+
+  pushButton.onClick(() => {
+    interval && clearInterval(interval);
+    timer && clearTimeout(timer);
+    output.toggle();
+  });
+
+  pushButton.onDoubleClick(() => {
+    timer && clearTimeout(timer);
+    interval = setInterval(output.toggle, 250);
+  });
+
+  pushButton.onLongClick(() => {
+    interval && clearInterval(interval);
+    output.write(OUTPUT_HIGH);
+    timer = setTimeout(() => output.write(OUTPUT_LOW), 10 * 1000);
   })
 
   while(1) {
