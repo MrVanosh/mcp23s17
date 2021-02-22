@@ -1,6 +1,6 @@
 {
   "name": "@mrvanosh/mcp23s17",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "MCP23S17 library that works in newest Node.js versions",
   "main": "index.js",
   "scripts": {
@@ -26,6 +26,7 @@
   "homepage": "https://github.com/MrVanosh/mcp23s17#readme",
   "dependencies": {
     "debug": "^4.1.1",
+    "i2c-bus": "^5.2.1",
     "spi-device": "^3.0.0"
   }
 }

@@ -1,8 +1,8 @@
 ![npm Version](https://img.shields.io/npm/v/@mrvanosh/mcp23s17?style=flat-square)
 ![npm](https://img.shields.io/npm/dw/@mrvanosh/mcp23s17?style=flat-square)
 
-# MCP23S17
-This is library to control the MCP23S17 IO-Expander.
+# MCP23x17
+This is library to control the MCP23x17 (MCP23S17, MCP23017) IO-Expander.
 
 I created this because MCP23S17 library that already exists in NPM is outdated and is not working on newer Node.JS versions.
 
@@ -32,12 +32,24 @@ npm i @mrvanosh/mcp23s17
 Turn on LED on input change on an MCP23S17 extender.
 
 ```js
-const MCP23S17 = require('@mrvanosh/mcp23s17');
+const {
+  i2c,
+  spi,
+  MCP23x17,
+  A7,
+  B5,
+  MODE_OUTPUT,
+  MODE_INPUT,
+  PULL_UP,
+  OUTPUT_HIGH
+} = require('@mrvanosh/mcp23s17');
 
 (async () => {
   // MCP23S17 is on BUS 0 and it's device 0
   // this stands for /dev/spidev0.0
-  const mcp = new MCP23S17.MCP23S17(0, 0);
+  // const bus = new spi(0,0);
+  const bus = new i2c(1);
+  const mcp = new MCP23x17(bus, 0x20)
 
   // Button is connected to pin #7 and ground
   // LED anode connected to pin #13 (B5), LED cathode is connected to ground through resistor 300 ohm
@@ -45,9 +57,9 @@ const MCP23S17 = require('@mrvanosh/mcp23s17');
   await mcp.begin()
 
   // Set pin #7 (A7) as input with pull-up resistor
-  const input = await mcp.mode(7, MCP23S17.MODE_INPUT, true)
+  const input = await mcp.mode(A7, MODE_INPUT, PULL_UP)
   // Set pin #13 (B5) as output with initial state LOW
-  const output = await mcp.mode(13, MCP23S17.MODE_OUTPUT, false)
+  const output = await mcp.mode(B5, MODE_OUTPUT, OUTPUT_HIGH)
 
   input.onChange((value) => {
     // Revert value because input is pull-up
@@ -68,7 +80,7 @@ See more examples in `examples` directory
 All methods are asynchronous.
 
 ### Class MCP23S17
-- [MCP23S17 Constructor](#mcp23s17busnumber-devicenumber)
+- [MCP23x17 Constructor](#mcp23s17busnumber-devicenumber)
 - [device.begin(busNumber, deviceNumber)](#begin)
 - [device.mode(pin, mode[, stateOrPullUp])](#modepin-mode)
 - [device.read([pin])](#readpin)
@@ -77,9 +89,9 @@ All methods are asynchronous.
 - [device.toggle(pin)](#togglepin)
 - [device.onChange(pin, callback)](#onchangepin-callback)
   
-### MCP23S17(busNumber, deviceNumber)
-- busNumber - the number of the SPI bus to open, 0 for `/dev/spidev0.n`, 1 for `/dev/spidev1.n`, ...
-- deviceNumber - the number of the SPI device to open, 0 for `/dev/spidevn.0`, 1 for `/dev/spidevn.1`, ...
+### MCP23x17(bus, slaveAddress)
+- bus - object of interface SPI or I2C (`new spi(0,0)`, `new i2c(1)`)
+- slaveAddress - address of mcp27x17 chip
 
 ### begin()
   Initializes MCP23S17
