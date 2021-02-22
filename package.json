@@ -1,7 +1,7 @@
 {
-  "name": "@mrvanosh/mcp23s17",
-  "version": "2.0.0",
-  "description": "MCP23S17 library that works in newest Node.js versions",
+  "name": "@mrvanosh/mcp23x17",
+  "version": "2.0.1",
+  "description": "MCP23x17 library that works in newest Node.js versions",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -12,8 +12,10 @@
   },
   "keywords": [
     "mcp23s17",
+    "mcp23017",
     "raspberry",
     "spi",
+    "i2c",
     "gpio",
     "expander",
     "io"
