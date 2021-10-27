@@ -47,7 +47,7 @@ const {
   MODE_INPUT,
   PULL_UP,
   OUTPUT_HIGH,
-} = require("@mrvanosh/mcp23s17");
+} = require("@mrvanosh/mcp23x17");
 
 (async () => {
   // MCP23S17 is on BUS 0 and it's device 0
