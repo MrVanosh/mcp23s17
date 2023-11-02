@@ -3,40 +3,40 @@
 
 # MCP23x17
 
-This is library to control the MCP23x17 (MCP23S17, MCP23017) IO-Expander.
+This library facilitates control of the MCP23x17 series of IO-Expanders, specifically the MCP23S17 (SPI interface) and MCP23017 (I2C interface).
 
-I created this because MCP23S17 library that already exists in NPM is outdated and is not working on newer Node.JS versions.
+I developed this library because the existing NPM package for the MCP23S17 was outdated and incompatible with newer versions of Node.JS.
 
-This library support Node.JS versions 12, 14, 16 and probably newers versions.
+This library supports Node.JS versions 12, 14, 16, and likely newer versions as well.
 
-I will really appreciate making issues and pull requests on GitHub.
+Your contributions through issues and pull requests on GitHub are highly appreciated.
 
 ## Contents
 
 - [Installation](#installation)
-- [What's working](#whats-working)
+- [What's Working](#whats-working)
 - [Usage](#usage)
 - [API Documentation](#api-documentation)
 
 ## Installation
 
-```
+```bash
 npm i @mrvanosh/mcp23x17
 ```
 
-## What's working?
+## What's Working?
 
-- Setting pin mode
-- Writing pin state to HIGH or LOW
-- Reading pin state
-- Pull-up input pins
-- Software onChange callbacks
+- Setting pin modes
+- Writing HIGH or LOW states to pins
+- Reading pin states
+- Enabling pull-up resistors on input pins
+- Implementing software-based onChange callbacks
 
 ## Usage
 
-Toggles LED on input (button) change on an MCP23x17 extender.
+Example: Toggling an LED based on input (button) changes using the MCP23x17 IO-Expander.
 
-```js
+```javascript
 const {
   i2c,
   spi,
@@ -50,170 +50,100 @@ const {
 } = require("@mrvanosh/mcp23x17");
 
 (async () => {
-  // MCP23S17 is on BUS 0 and it's device 0
-  // this stands for /dev/spidev0.0
-  // const bus = new spi(0,0);
+  // For MCP23S17 (SPI): Initialize with SPI bus and device numbers
+  // Example for /dev/spidev0.0: const bus = new spi(0,0);
 
-  // MCP23017 is on BUS 1 and it's device 1
-  // const bus = new i2c(1);
+  // For MCP23017 (I2C): Initialize with I2C bus number
   const bus = new i2c(1);
   const mcp = new MCP23x17(bus, 0x20);
 
-  // Button is connected to pin #7 and ground
-  // LED anode connected to pin #13 (B5), LED cathode is connected to ground through resistor 300 ohm
+  // Connect a button to pin #7 and ground, and an LED (through a 300-ohm resistor) to pin #13 (B5)
 
   await mcp.begin();
 
-  // Set pin #7 (A7) as input with pull-up resistor
+  // Configure pin #7 (A7) as an input with a pull-up resistor
   const input = await mcp.mode(A7, MODE_INPUT, PULL_UP);
-  // Set pin #13 (B5) as output with initial state LOW
+  // Configure pin #13 (B5) as an output, initially set to HIGH
   const output = await mcp.mode(B5, MODE_OUTPUT, OUTPUT_HIGH);
 
   input.onChange((value) => {
-    // Revert value because input is pull-up
+    // Invert the value because the input is pull-up
     output.write(!value);
   });
 
-  while (1) {
-    // continuously reading input to detect changes
+  while (true) {
+    // Continuously read input to detect changes
     await input.read();
-    // If you don't need track a immediate change, use small pause
+    // For less immediate change tracking, include a small delay
     // await (new Promise((resolve) => setTimeout(resolve, 50)));
   }
 })();
 ```
 
-See more examples in `examples` directory
+More examples can be found in the `examples` directory.
 
 ## API Documentation
 
 All methods are asynchronous.
 
-- [MCP23x17](#mcp23x17)
-  - [Contents](#contents)
-  - [Installation](#installation)
-  - [What's working?](#whats-working)
-  - [Usage](#usage)
-  - [API Documentation](#api-documentation)
-  - [Class MCP23x17](#class-mcp23x17)
-    - [MCP23x17(bus, slaveAddress)](#mcp23x17bus-slaveaddress)
-    - [directions(arrayOfPins)](#directionsarrayofpins)
-    - [begin()](#begin)
-    - [mode(pin, mode, stateOrPullUp)](#modepin-mode-stateorpullup)
-    - [read([pin])](#readpin)
-    - [write(pin, state) on MCP23x17 object](#writepin-state-on-mcp23x17-object)
-    - [toggle(pin)](#togglepin)
-    - [isPulledUp(pin)](#ispulleduppin)
-    - [onChange(pin, callback)](#onchangepin-callback)
-  - [InputPin](#inputpin)
-    - [read()](#read)
-    - [pullUp()](#pullup)
-    - [pullOff()](#pulloff)
-    - [onChange(callback)](#onchangecallback)
-  - [OutputPin](#outputpin)
-    - [write(state)](#writestate)
-    - [high()](#high)
-    - [low()](#low)
-    - [toggle()](#toggle)
+### Class MCP23x17
 
-## Class MCP23x17
+#### MCP23x17(bus, slaveAddress)
+- **bus**: An SPI or I2C interface object (`new spi(0,0)` for SPI, `new i2c(1)` for I2C).
+- **slaveAddress**: The address of the MCP23x17 chip.
 
-### MCP23x17(bus, slaveAddress)
+#### directions(arrayOfPins)
+Sets the directions of pins using a 16-element array. Must be called before `begin`.
+- **arrayOfPins**: An array specifying the directions of each pin.
 
-- bus - object of interface SPI or I2C (`new spi(0,0)`, `new i2c(1)`)
-- slaveAddress - address of MCP23x17 chip
-  e.g.
-  `const bus = new i2c(1);`
-  `const mcp = new MCP23x17(bus, 0x20);`
+#### begin()
+Initializes the MCP23x17.
 
-### directions(arrayOfPins)
+#### mode(pin, mode, stateOrPullUp)
+Configures the mode of a pin.
+- **pin**: The pin number (e.g., A1, B7).
+- **mode**: Either `MODE_INPUT` or `MODE_OUTPUT`.
+- **stateOrPullUp**: For inputs, use `PULL_UP` or `PULL_DOWN`. For outputs, use `OUTPUT_HIGH` or `OUTPUT_LOW`.
 
-Setting pins directions through 16 length array (see examples), Must be executed before `begin` function
+#### read([pin])
+Reads the state of a specified pin or all pins.
+- **pin**: (Optional) The specific pin to read.
 
-- arrayOfPins - array of pin directions
+#### write(pin, state)
+Sets the state of an output pin.
+- **pin**: The pin number.
+- **state**: The desired state (true for HIGH, false for LOW).
 
-### begin()
+#### toggle(pin)
+Toggles the state of an output pin.
+- **pin**: The pin number.
 
-Initializes MCP23x17
-e.g. `await mcp.begin();`
+#### isPulledUp(pin)
+Checks if a pin has a pull-up resistor enabled.
+- **pin**: The pin number.
 
-### mode(pin, mode, stateOrPullUp)
+#### onChange(pin, callback)
+Executes a callback function when the value of an input pin changes.
+- **pin**: The pin number.
+- **callback**: The function to execute on a state change.
 
-Setup pin mode
+### InputPin
 
-- pin - pin on MCP23X17 imported from library (A1, ..., A7) (B1, ... B7)
-- mode - `MODE_INPUT` or `MODE_OUTPUT`
-- stateOrPullUp - pull-up for inputs and LOW/HIGH state for outputs - `OUTPUT_HIGH`, `OUTPUT_LOW`, `PULL_UP`, `PULL_DOWN`
-  e.g.
-  `const input = await mcp.mode(A1, MODE_INPUT, PULL_UP)` - creates InputPin object
-  `const output = await mcp.mode(A2, MODE_OUTPUT, OUTPUT_HIGH)` - creates OutputPin object
+#### read()
+Returns the current state of the pin (true for HIGH, false for LOW).
 
-### read([pin])
+#### pullUp()
+Enables a pull-up resistor on the pin.
 
-Read certain pin or read all pins to cache. Return true/false for pin reading or 16bit number with pins state
+#### pullOff()
+Disables the pull-up resistor on the pin.
 
-- pin - pin for reading (A1, ..., A7) (B1, ... B7)
+#### onChange(callback)
+Registers a callback function to be called when the pin's state changes.
+- **callback**: The function to execute on a state change.
 
-### write(pin, state) on MCP23x17 object
+### OutputPin
 
-Write LOW or HIGH value to output pin
-
-- pin - pin number (A1, ..., A7) (B1, ... B7)
-- state - true/false
-
-### toggle(pin)
-
-Revert state of output pin
-
-- pin - pin number (A1, ..., A7) (B1, ... B7)
-
-### isPulledUp(pin)
-
-- pin - pin number (A1, ..., A7) (B1, ... B7)
-
-### onChange(pin, callback)
-
-Track changes value at input pin and execute callback with new value
-
-- pin - input pin number
-- callback - function to be executed on pin state change
-
-## InputPin
-
-### read()
-
-Return true/false for pin reading
-
-### pullUp()
-
-Pull Up a pin
-
-### pullOff()
-
-Disable pull up on a pin
-
-### onChange(callback)
-
-Track changes value at input pin and execute callback with new value
-
-- callback - function to be executed on pin state change
-
-## OutputPin
-
-### write(state)
-
-Set pin state
-
-- true/false -> true - ON, false - OFF
-
-### high()
-
-Set pin state to high
-
-### low()
-
-Set pin state to low
-
-### toggle()
-
-Revert state of output pin
+#### write(state)
+Sets the state of the pin.
+- **state**: true for HIGH, false
